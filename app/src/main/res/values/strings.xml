@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name">Digipote</string>
+    <string name="button_add">Ajouter un digicode</string>
+    <string name="button_save">Enregistrer</string>
+    <string name="button_cancel">Annuler</string>
+    <string name="edit_name_hint">Prénom Nom</string>
+    <string name="edit_code_hint">Code</string>
+    <string name="edit_street_hint">Adresse</string>
+    <string name="edit_zip_code_hint">Code postal</string>
+    <string name="edit_city_hint">Ville</string>
+    <string name="edit_country_hint">Pays</string>
+    <string name="hello_world">Hello world!</string>
+    <string name="action_settings">Settings</string>
+    <string name="action_add_digicode">Ajouter un digicode</string>
+</resources>

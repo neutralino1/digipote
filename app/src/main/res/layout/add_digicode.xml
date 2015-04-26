@@ -1,0 +1,43 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/white"
+    android:padding="10dp">
+
+        <EditText android:id="@+id/edit_name"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="textPersonName"
+
+            android:textAppearance="?android:attr/textAppearanceLarge"
+            android:hint="@string/edit_name_hint"
+            android:capitalize="words" />
+        <EditText android:id="@+id/edit_code"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textAppearance="?android:attr/textAppearanceLarge"
+            android:hint="@string/edit_code_hint"
+            android:typeface="monospace" />
+        <EditText android:id="@+id/edit_street"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textAppearance="?android:attr/textAppearanceLarge"
+            android:hint="@string/edit_street_hint" />
+        <EditText android:id="@+id/edit_zip_code"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textAppearance="?android:attr/textAppearanceLarge"
+            android:hint="@string/edit_zip_code_hint" />
+        <EditText android:id="@+id/edit_city"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textAppearance="?android:attr/textAppearanceLarge"
+            android:hint="@string/edit_city_hint" />
+        <EditText android:id="@+id/edit_country"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textAppearance="?android:attr/textAppearanceLarge"
+            android:hint="@string/edit_country_hint" />
+    </LinearLayout>
