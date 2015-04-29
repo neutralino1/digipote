@@ -17,6 +17,7 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.BaseAdapter;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.AdapterView.OnItemClickListener;
@@ -26,6 +27,8 @@ import java.util.List;
 
 
 public class Digipote extends ActionBarActivity {
+
+    public static String GEOCODE_API_KEY = "AIzaSyCIM7xibZYimEPLTH4z3g8w8v26x26xZOI";
 
     public class DigipoteAdapter extends BaseAdapter {
         List<Digicode> digicodeList = getDataForListView();
@@ -44,6 +47,7 @@ public class Digipote extends ActionBarActivity {
         public Digicode getItem(int arg0) {
             return digicodeList.get(arg0);
         }
+
         @Override
         public View getView(int arg0, View arg1, ViewGroup arg2){
             if(arg1==null)
@@ -51,22 +55,27 @@ public class Digipote extends ActionBarActivity {
                 LayoutInflater inflater = (LayoutInflater) Digipote.this.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
                 arg1 = inflater.inflate(R.layout.digicode_list_item, arg2,false);
             }
-
-            TextView firstName = (TextView)arg1.findViewById(R.id.name);
+            TextView name = (TextView)arg1.findViewById(R.id.name);
             TextView code = (TextView)arg1.findViewById(R.id.code);
             TextView address = (TextView)arg1.findViewById(R.id.address);
 
             Digicode digicode = digicodeList.get(arg0);
+            arg1.setTag(R.id.digicode_object, digicode);
 
-            firstName.setText(digicode.firstName);
-            code.setText(digicode.code);
+            name.setText(digicode.getName());
+            code.setText(digicode.getCode());
             String fullAddress = digicode.getFullAddress();
             if (fullAddress == null){
                 address.setHeight(0);
             }else {
                 address.setText(digicode.getFullAddress());
             }
-
+            Log.d("sdsds", String.format("%s", digicode.getLatitude()));
+            if (!digicode.isGeolocated()) {
+                Log.d("lool", digicode.toString());
+                ImageView geoloc = (ImageView)arg1.findViewById(R.id.geoloc_icon);
+                geoloc.setVisibility(View.INVISIBLE);
+            }
             return arg1;
         }
     }
@@ -99,8 +108,7 @@ public class Digipote extends ActionBarActivity {
         mainList.setOnItemClickListener(new OnItemClickListener(){
             @Override
             public void onItemClick(AdapterView av, View v, int i, long l) {
-                Log.d("aaa", "eee");
-                editDigicode(null);
+                editDigicode((Digicode)v.getTag(R.id.digicode_object));
             }
         });
     }
@@ -116,7 +124,6 @@ public class Digipote extends ActionBarActivity {
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
 
-        //noinspection SimplifiableIfStatement
         if (id == R.id.action_add_digicode) {
             editDigicode(null);
             return true;
@@ -125,10 +132,10 @@ public class Digipote extends ActionBarActivity {
         return super.onOptionsItemSelected(item);
     }
 
-    public void editDigicode(Integer id){
+    public void editDigicode(Digicode digicode){
         Intent add = new Intent(Digipote.this, AddDigicode.class);
-        if (id != null){
-            add.putExtra("digicode_id", id);
+        if (digicode != null){
+            add.putExtra("digicode_object", digicode);
         }
         startActivity(add);
     }
