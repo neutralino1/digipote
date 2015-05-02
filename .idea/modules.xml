@@ -3,8 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/Digipote.iml" filepath="$PROJECT_DIR$/Digipote.iml" />
-      <module fileurl="file://$PROJECT_DIR$/app/digipote.iml" filepath="$PROJECT_DIR$/app/digipote.iml" />
+      <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
     </modules>
   </component>
 </project>
-

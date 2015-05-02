@@ -1,10 +1,14 @@
 package net.turlay.digipote;
 
+import android.app.Activity;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.location.Address;
+import android.location.Geocoder;
+import android.os.AsyncTask;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -21,7 +25,9 @@ import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.AdapterView.OnItemClickListener;
+import android.widget.Toast;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -48,6 +54,10 @@ public class Digipote extends ActionBarActivity {
             return digicodeList.get(arg0);
         }
 
+        public void setItem(int arg0, Digicode digicode) {
+            digicodeList.set(arg0, digicode);
+        }
+
         @Override
         public View getView(int arg0, View arg1, ViewGroup arg2){
             if(arg1==null)
@@ -65,19 +75,22 @@ public class Digipote extends ActionBarActivity {
             name.setText(digicode.getName());
             code.setText(digicode.getCode());
             String fullAddress = digicode.getFullAddress();
-            if (fullAddress == null){
+            if (fullAddress.isEmpty()){
                 address.setHeight(0);
             }else {
-                address.setText(digicode.getFullAddress());
+                address.setText(fullAddress);
             }
-            Log.d("sdsds", String.format("%s", digicode.getLatitude()));
+            Log.d("getView", digicode.toString());
+            Log.d("getView", String.format("%s", digicode.getLatitude()));
+            ImageView geoloc = (ImageView)arg1.findViewById(R.id.geoloc_icon);
             if (!digicode.isGeolocated()) {
-                Log.d("lool", digicode.toString());
-                ImageView geoloc = (ImageView)arg1.findViewById(R.id.geoloc_icon);
                 geoloc.setVisibility(View.INVISIBLE);
+            } else {
+                geoloc.setVisibility(View.VISIBLE);
             }
             return arg1;
         }
+
     }
 
     public List<Digicode> getDataForListView()
@@ -111,6 +124,13 @@ public class Digipote extends ActionBarActivity {
                 editDigicode((Digicode)v.getTag(R.id.digicode_object));
             }
         });
+        Bundle extras = getIntent().getExtras();
+        if (extras != null) {
+            Digicode digicode = (Digicode)extras.getSerializable("digicode_object");
+            if (digicode != null) {
+                new GeocodeTask(this).execute(digicode);
+            }
+        }
     }
 
     @Override
@@ -138,5 +158,58 @@ public class Digipote extends ActionBarActivity {
             add.putExtra("digicode_object", digicode);
         }
         startActivity(add);
+    }
+
+    private class GeocodeTask extends AsyncTask<Digicode, Integer, Boolean> {
+
+        private Activity activity;
+        private Digicode digicode;
+
+        public GeocodeTask (Activity activity) {
+            this.activity = activity;
+        }
+        @Override
+        protected Boolean doInBackground(Digicode... params) {
+            this.digicode = params[0];
+            if (this.digicode.isGeolocated()) return null;
+            String fullAddress = this.digicode.getFullAddress();
+            if (fullAddress == null) return null;
+            if (!Geocoder.isPresent()) return null;
+            Geocoder gc = new Geocoder(this.activity);
+            try {
+                List<Address> list = gc.getFromLocationName(fullAddress, 1);
+                Address address = list.get(0);
+                double lat = address.getLatitude();
+                double lng = address.getLongitude();
+                Log.d("LOCATION", String.format("Geocoding successful %s %s", lat, lng));
+                this.digicode.setLatitude(lat);
+                this.digicode.setLongitude(lng);
+                this.digicode.save(this.activity);
+                return true;
+            } catch (IOException e){
+                return false;
+            }
+        }
+
+        @Override
+        protected void onPostExecute(Boolean result) {
+            if (result == null) return;
+            if (result) {
+                ListView list = (ListView)this.activity.findViewById(R.id.main_list);
+                DigipoteAdapter adapter = (DigipoteAdapter)list.getAdapter();
+                for (int i = 0; i < adapter.getCount(); i++) {
+                    Log.d("this.digicode.getId()", this.digicode.getId());
+                    Log.d("getItem(i).getId()", adapter.getItem(i).getId());
+                    if (this.digicode.getId().equals(adapter.getItem(i).getId())) {
+                        Log.d("GEOCODE", String.format("%s", this.digicode.getLatitude()));
+                        adapter.setItem(i, this.digicode);
+                    }
+                }
+                adapter.notifyDataSetChanged();
+                Toast.makeText(this.activity, "Trouvé !", Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(this.activity, "Pas trouvé :(", Toast.LENGTH_SHORT).show();
+            }
+        }
     }
 }

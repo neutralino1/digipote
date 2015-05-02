@@ -4,11 +4,17 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.text.BoringLayout;
+import android.util.Log;
+
+import com.google.android.gms.maps.model.LatLng;
 
 import java.io.Serializable;
+import java.util.Objects;
 
 public class Digicode  implements Serializable {
     private static final long serialVersionUID = 2L;
+    private final String tableName = DigipoteContract.DigicodeEntry.TABLE_NAME;
     private String id;
     private String name;
     private String code;
@@ -18,6 +24,12 @@ public class Digicode  implements Serializable {
     private String country;
     private Double latitude;
     private Double longitude;
+    private Boolean changed = false;
+    private transient LatLng latLng;
+
+    public Digicode () {
+        this.changed = false;
+    }
 
     public void setFromCursor(Cursor cursor) {
         setId(cursor.getString(cursor.getColumnIndexOrThrow(DigipoteContract.DigicodeEntry._ID)));
@@ -29,19 +41,26 @@ public class Digicode  implements Serializable {
         setCountry(cursor.getString(cursor.getColumnIndexOrThrow(DigipoteContract.DigicodeEntry.COLUMN_NAME_COUNTRY)));
         setLatitude(cursor.getDouble(cursor.getColumnIndexOrThrow(DigipoteContract.DigicodeEntry.COLUMN_NAME_LATITUDE)));
         setLongitude(cursor.getDouble(cursor.getColumnIndexOrThrow(DigipoteContract.DigicodeEntry.COLUMN_NAME_LONGITUDE)));
+        this.changed = false;
+    }
+
+    public Boolean hasChanged(){
+        return this.changed;
     }
 
     public String getFullAddress() {
-        if (this.street == null && this.zipCode == null && this.city == null){
-            return null;
+        if ((getStreet().isEmpty() && getZipCode().isEmpty() && getCity().isEmpty())){
+            return "";
         }
-        return this.street + ", " + this.zipCode + " " + this.city;
+        return getStreet() + ", " + getZipCode() + " " + getCity();
     }
 
     public String getId() {
         return this.id;
     }
     public void setId(String id) {
+        if (id != null && id.equals(this.id)) return;
+        this.changed = true;
         this.id = id;
     }
 
@@ -49,41 +68,72 @@ public class Digicode  implements Serializable {
         return this.name;
     }
     public void setName(String name) {
+        if (!sanitizeStringAttribute(name, this.name)) return;
+        this.changed = true;
         this.name = name;
+    }
+
+    protected Boolean sanitizeStringAttribute(String nnew, String old) {
+        return !((nnew != null && nnew.equals(old)) || (nnew != null && nnew.isEmpty() && old == null));
     }
 
     public String getCode() {
         return this.code;
     }
     public void setCode(String code) {
+        if (!sanitizeStringAttribute(code, this.code)) return;
+        this.changed = true;
         this.code = code;
     }
 
     public String getStreet() {
+        if (this.street == null) return "";
         return this.street;
     }
     public void setStreet(String street) {
-        this.street = street;
+        if (!sanitizeStringAttribute(street, this.street)) return;
+        this.changed = true;
+        if (street != null && street.isEmpty()) {
+            this.street = null;
+        } else {
+            this.street = street;
+        }
     }
 
     public String getZipCode() {
+        if (this.zipCode == null) return "";
         return this.zipCode;
     }
     public void setZipCode(String zipCode) {
-        this.zipCode = zipCode;
+        if (!sanitizeStringAttribute(zipCode, this.zipCode)) return;
+        this.changed = true;
+        if (zipCode != null && zipCode.isEmpty()) {
+            this.zipCode = null;
+        } else {
+            this.zipCode = zipCode;
+        }
     }
 
     public String getCity() {
+        if (this.city == null) return "";
         return this.city;
     }
     public void setCity(String city) {
-        this.city = city;
+        if (!sanitizeStringAttribute(city, this.city)) return;
+        this.changed = true;
+        if (city != null && city.isEmpty()) {
+            this.city = null;
+        } else {
+            this.city = city;
+        }
     }
 
     public String getCountry() {
         return this.country;
     }
     public void setCountry(String country) {
+        if (!sanitizeStringAttribute(country, this.country)) return;
+        this.changed = true;
         this.country = country;
     }
 
@@ -91,18 +141,74 @@ public class Digicode  implements Serializable {
         return "Digicode[id=" + this.id + "]";
     }
 
-    public Double getLatitude() { return this.latitude; }
-    public void setLatitude(Double latitude) { this.latitude = latitude; }
+    public Double getLatitude() {
+        if (this.latitude == null || this.latitude == 0.0) return null;
+        return this.latitude;
+    }
+    public void setLatitude(Double latitude) {
+        if (latitude != null && latitude.equals(this.latitude)) return;
+        this.changed = true;
+        this.latitude = latitude;
+        this.latLng = null;
+    }
 
-    public Double getLongitude() { return this.longitude; }
-    public void setLongitude(Double longitude) { this.longitude = longitude; }
+    public Double getLongitude() {
+        if (this.latitude == null || this.longitude == 0.0) return null;
+        return this.longitude;
+    }
+    public void setLongitude(Double longitude) {
+        if (longitude != null && longitude.equals(this.longitude)) return;
+        this.changed = true;
+        this.longitude = longitude;
+        this.latLng = null;
+    }
+
+    public LatLng getLatLng() {
+        if (this.latLng == null) {
+            this.latLng = new LatLng(this.latitude, this.longitude);
+        }
+        return this.latLng;
+    }
 
     public Boolean isNew() { return getId() == null; }
-    public Boolean isGeolocated() { return getLatitude() != 0. && getLongitude() != 0.; }
+    public Boolean isGeolocated() {
+        return getLatitude() != null && getLongitude() != null; }
 
-    public void save(Context context) {
+    protected SQLiteDatabase writableDB(Context context) {
         DigipoteDbHelper mDbHelper = new DigipoteDbHelper(context);
-        SQLiteDatabase wdb = mDbHelper.getWritableDatabase();
+        return mDbHelper.getWritableDatabase();
+    }
+
+    public String getTableName(){
+        return this.tableName;
+    }
+
+    public Boolean delete(Context context) {
+        SQLiteDatabase wdb = writableDB(context);
+        wdb.delete(getTableName(), DigipoteContract.DigicodeEntry._ID + " = ?", new String[] {getId()});
+        return true;
+    }
+
+    public Boolean save(Context context) {
+        if (!hasChanged()) return null;
+        SQLiteDatabase wdb = writableDB(context);
+        if (isNew()) {
+            Long id = wdb.insert(getTableName(), null, getContentValues());
+            if (id != -1) {
+                setId(Objects.toString(id));
+                this.changed = false;
+                return true;
+            }
+            else return false;
+        } else {
+            wdb.update(getTableName(), getContentValues(), DigipoteContract.DigicodeEntry._ID + " = ?", new String[] {getId()});
+            this.changed = false;
+            return true;
+        }
+
+    }
+
+    protected ContentValues getContentValues(){
         ContentValues values = new ContentValues();
         values.put(DigipoteContract.DigicodeEntry.COLUMN_NAME_NAME, getName());
         values.put(DigipoteContract.DigicodeEntry.COLUMN_NAME_CODE, getCode());
@@ -112,12 +218,6 @@ public class Digicode  implements Serializable {
         values.put(DigipoteContract.DigicodeEntry.COLUMN_NAME_COUNTRY, getCountry());
         values.put(DigipoteContract.DigicodeEntry.COLUMN_NAME_LATITUDE, getLatitude());
         values.put(DigipoteContract.DigicodeEntry.COLUMN_NAME_LONGITUDE, getLongitude());
-
-        if (isNew()) {
-            wdb.insert(DigipoteContract.DigicodeEntry.TABLE_NAME, null, values);
-        } else {
-            wdb.update(DigipoteContract.DigicodeEntry.TABLE_NAME, values, DigipoteContract.DigicodeEntry._ID + " = ?", new String[] {getId()});
-        }
-
+        return values;
     }
 }
