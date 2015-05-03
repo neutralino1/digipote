@@ -37,11 +37,18 @@ public class Digipote extends ActionBarActivity {
     public static String GEOCODE_API_KEY = "AIzaSyCIM7xibZYimEPLTH4z3g8w8v26x26xZOI";
 
     public class DigipoteAdapter extends BaseAdapter {
-        List<Digicode> digicodeList = getDataForListView();
+        List<Digicode> digicodeList;
+
+        public List<Digicode> getDigicodeList(){
+            if (digicodeList == null) {
+                digicodeList = Digicode.getAll(Digipote.this);
+            }
+            return digicodeList;
+        }
 
         @Override
         public int getCount() {
-            return digicodeList.size();
+            return getDigicodeList().size();
         }
 
         @Override
@@ -51,11 +58,11 @@ public class Digipote extends ActionBarActivity {
 
         @Override
         public Digicode getItem(int arg0) {
-            return digicodeList.get(arg0);
+            return getDigicodeList().get(arg0);
         }
 
         public void setItem(int arg0, Digicode digicode) {
-            digicodeList.set(arg0, digicode);
+            getDigicodeList().set(arg0, digicode);
         }
 
         @Override
@@ -69,7 +76,7 @@ public class Digipote extends ActionBarActivity {
             TextView code = (TextView)arg1.findViewById(R.id.code);
             TextView address = (TextView)arg1.findViewById(R.id.address);
 
-            Digicode digicode = digicodeList.get(arg0);
+            Digicode digicode = getDigicodeList().get(arg0);
             arg1.setTag(R.id.digicode_object, digicode);
 
             name.setText(digicode.getName());
@@ -80,8 +87,6 @@ public class Digipote extends ActionBarActivity {
             }else {
                 address.setText(fullAddress);
             }
-            Log.d("getView", digicode.toString());
-            Log.d("getView", String.format("%s", digicode.getLatitude()));
             ImageView geoloc = (ImageView)arg1.findViewById(R.id.geoloc_icon);
             if (!digicode.isGeolocated()) {
                 geoloc.setVisibility(View.INVISIBLE);
@@ -91,24 +96,6 @@ public class Digipote extends ActionBarActivity {
             return arg1;
         }
 
-    }
-
-    public List<Digicode> getDataForListView()
-    {
-        List<Digicode> digicodeList = new ArrayList<Digicode>();
-
-        DigipoteDbHelper mDbHelper = new DigipoteDbHelper(this);
-        SQLiteDatabase rdb = mDbHelper.getReadableDatabase();
-        Cursor cursor = rdb.query(DigipoteContract.DigicodeEntry.TABLE_NAME, DigipoteContract.DigicodeEntry.PROJECTION, null, null, null, null, null);
-        cursor.moveToFirst();
-        while (!cursor.isAfterLast()) {
-            Digicode digicode = new Digicode();
-            digicode.setFromCursor(cursor);
-            digicodeList.add(digicode);
-            cursor.moveToNext();
-        }
-        cursor.close();
-        return digicodeList;
     }
 
     @Override

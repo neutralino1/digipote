@@ -4,12 +4,15 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.location.Location;
 import android.text.BoringLayout;
 import android.util.Log;
 
 import com.google.android.gms.maps.model.LatLng;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 public class Digicode  implements Serializable {
@@ -174,7 +177,7 @@ public class Digicode  implements Serializable {
     public Boolean isGeolocated() {
         return getLatitude() != null && getLongitude() != null; }
 
-    protected SQLiteDatabase writableDB(Context context) {
+    protected SQLiteDatabase getWritableDB(Context context) {
         DigipoteDbHelper mDbHelper = new DigipoteDbHelper(context);
         return mDbHelper.getWritableDatabase();
     }
@@ -184,14 +187,14 @@ public class Digicode  implements Serializable {
     }
 
     public Boolean delete(Context context) {
-        SQLiteDatabase wdb = writableDB(context);
+        SQLiteDatabase wdb = getWritableDB(context);
         wdb.delete(getTableName(), DigipoteContract.DigicodeEntry._ID + " = ?", new String[] {getId()});
         return true;
     }
 
     public Boolean save(Context context) {
         if (!hasChanged()) return null;
-        SQLiteDatabase wdb = writableDB(context);
+        SQLiteDatabase wdb = getWritableDB(context);
         if (isNew()) {
             Long id = wdb.insert(getTableName(), null, getContentValues());
             if (id != -1) {
@@ -219,5 +222,30 @@ public class Digicode  implements Serializable {
         values.put(DigipoteContract.DigicodeEntry.COLUMN_NAME_LATITUDE, getLatitude());
         values.put(DigipoteContract.DigicodeEntry.COLUMN_NAME_LONGITUDE, getLongitude());
         return values;
+    }
+
+    public Location getLocation() {
+        if (!isGeolocated()) return null;
+        Location location = new Location("");
+        location.setLatitude(getLatitude());
+        location.setLongitude(getLongitude());
+        return location;
+    }
+
+    public static List<Digicode> getAll(Context context){
+        List<Digicode> digicodeList = new ArrayList<Digicode>();
+
+        DigipoteDbHelper mDbHelper = new DigipoteDbHelper(context);
+        SQLiteDatabase rdb = mDbHelper.getReadableDatabase();
+        Cursor cursor = rdb.query(DigipoteContract.DigicodeEntry.TABLE_NAME, DigipoteContract.DigicodeEntry.PROJECTION, null, null, null, null, null);
+        cursor.moveToFirst();
+        while (!cursor.isAfterLast()) {
+            Digicode digicode = new Digicode();
+            digicode.setFromCursor(cursor);
+            digicodeList.add(digicode);
+            cursor.moveToNext();
+        }
+        cursor.close();
+        return digicodeList;
     }
 }
